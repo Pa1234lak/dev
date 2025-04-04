@@ -1,0 +1,29 @@
+{% include "store/base.html" %}
+{% load static %}
+{% block content %}
+
+<style>
+    body{
+
+        background-color: gray;
+    }
+</style>
+
+<body>
+    <br>
+    <div class="container bg-white shadow-md p-5 form-layout">
+        <div class="text-center">
+            <i class="fa-solid fa-exclamation fa-bounce fa-3x" style="color: #214583;"></i>
+            <br><br>
+
+        <h5><strong> Email verification failed!</strong> </h5>
+        <hr>
+        <p> Please contact admin support. </p>
+
+        </div>
+
+
+    </div>
+</body>
+
+{% endblock %}
