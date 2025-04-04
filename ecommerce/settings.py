@@ -22,9 +22,9 @@ SECRET_KEY = env('SECRET_KEY')
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['web-app-cjv8.onrender.com','*']
 
-#CSRF_TRUSTED_ORIGINS = ['']
+CSRF_TRUSTED_ORIGINS = ['https://web-app-cjv8.onrender.com']
 
 
 
