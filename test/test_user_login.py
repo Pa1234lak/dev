@@ -17,38 +17,39 @@ def test_user_login():
     try:
         # Step 1: Open the login page
         driver.get(f"{BASE_URL}/account/my-login")
-        print("✅ Opened login page")
+        print("PASSED: Opened login page.")
         
         # Step 2: Fill in the login form fields using unique IDs
         try:
             wait.until(EC.presence_of_element_located((By.ID, "id_username"))).send_keys("newuser123")
             driver.find_element(By.ID, "id_password").send_keys("Password@123")
-            print("✅ Filled in login credentials")
+            print("PASSED: Filled in login credentials.")
         except TimeoutException:
-            print("❌ Login form fields not found")
-            return  # exit test gracefully
+            print("FAILED: Login form fields not found.")
+            return
         
         # Step 3: Scroll into view if needed, then click the Login button
         try:
             login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Login')]")))
             driver.execute_script("arguments[0].scrollIntoView(true);", login_button)
-            time.sleep(1)  # Allow any animations to finish
+            time.sleep(1)
             login_button.click()
-            print("✅ Clicked 'Login' button")
+            print("PASSED: Clicked 'Login' button.")
         except TimeoutException:
-            print("❌ Login button not found or not clickable")
+            print("FAILED: Login button not found or not clickable.")
             return
         
         # Step 4: Wait for redirection to a dashboard or account page
         try:
             wait.until(EC.url_contains("/dashboard"))
-            print("✅ Login successful: redirected to dashboard")
+            print("PASSED: Login successful, redirected to dashboard.")
         except TimeoutException:
-            print("❌ Did not redirect to dashboard after login")
+            print("FAILED: Did not redirect to dashboard after login.")
         
     finally:
         time.sleep(3)
         driver.quit()
+        print("INFO: Browser closed.")
 
 if __name__ == "__main__":
     test_user_login()
