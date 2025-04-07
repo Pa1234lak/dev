@@ -1,0 +1,9 @@
+_pycache_
+*.pyc
+*.pyo
+*.pyd
+*.db
+.env
+*.sqlite3
+.vscode
+.git
