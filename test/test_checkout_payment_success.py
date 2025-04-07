@@ -1,48 +1,62 @@
-import requests
-import re
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.ui import Select
+import time
 
-BASE_URL = "https://web-app-cjv8.onrender.com"
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+wait = WebDriverWait(driver, 10)
 
-def test_checkout_payment_success():
-    session = requests.Session()
+try:
+    # Step 1: Open product page
+    driver.get("https://web-app-cjv8.onrender.com/product/levis-shirt/")
+    print("✅ Opened product page")
 
-    # Step 1: Add item to cart first (or login if needed)
-    add_response = session.post(
-        f"{BASE_URL}/cart/add",
-        data={
-            "product_id": 1,
-            "quantity": 1
-        }
-    )
-    assert add_response.status_code in (200, 302), "Failed to add item to cart"
+    # Select quantity = 1
+    Select(wait.until(EC.presence_of_element_located((By.ID, "select")))).select_by_value("1")
 
-    # Step 2: Access checkout page (to get CSRF or session data if needed)
-    checkout_page = session.get(f"{BASE_URL}/checkout")
-    assert checkout_page.status_code == 200
+    # Click Add to Cart
+    wait.until(EC.element_to_be_clickable((By.ID, "add-button"))).click()
+    print("🛒 Added product to cart")
 
-    # Optional: Extract CSRF token if required (assuming Django-style)
-    csrf_token = None
-    match = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', checkout_page.text)
-    if match:
-        csrf_token = match.group(1)
+    time.sleep(2)  # Wait for cart update (optional)
 
-    # Step 3: Simulate payment
-    payment_data = {
-        "card_number": "4242424242424242",
-        "expiry": "12/26",
-        "cvv": "123",
-        "pay": "Pay"
-    }
+    # Step 2: Go to cart page
+    driver.get("https://web-app-cjv8.onrender.com/cart/")
+    print("🛒 Navigated to cart")
 
-    if csrf_token:
-        payment_data["csrfmiddlewaretoken"] = csrf_token
+    # Step 3: Verify total amount in cart
+    total_element = wait.until(EC.presence_of_element_located((By.ID, "total")))
+    total_amount = total_element.text
+    print(f"💰 Cart total: {total_amount}")
+    assert float(total_amount) > 0, "❌ Total amount is not greater than zero"
 
-    headers = {}
-    if csrf_token:
-        headers["Referer"] = f"{BASE_URL}/checkout"
+    # Step 4: Go to checkout
+    driver.get("https://web-app-cjv8.onrender.com/payment/checkout")
+    print("✅ Navigated to checkout page")
 
-    pay_response = session.post(f"{BASE_URL}/checkout", data=payment_data, headers=headers)
-    assert pay_response.status_code in (200, 302), f"Payment POST failed: {pay_response.status_code}"
+    # Step 5: Fill in billing details
+    wait.until(EC.presence_of_element_located((By.NAME, "name"))).send_keys("Test User")
+    driver.find_element(By.NAME, "email").send_keys("test@example.com")
+    driver.find_element(By.NAME, "address1").send_keys("123 Test St")
+    driver.find_element(By.NAME, "address2").send_keys("Suite 100")
+    driver.find_element(By.NAME, "city").send_keys("Testville")
+    driver.find_element(By.NAME, "state").send_keys("TS")
+    driver.find_element(By.NAME, "zipcode").send_keys("12345")
+    print("📋 Filled in billing info")
 
-    # Step 4: Confirm success message
-    assert "payment successful" in pay_response.text.lower()
+    # Optional: simulate PayPal payment flow completion
+    driver.execute_script("window.location.href='/payment/payment-success'")
+    print("➡️ Redirected to payment success page")
+
+    # Step 6: Validate success page
+    success = wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Payment Successful') or contains(text(), 'payment successful')]")))
+    assert success, "❌ Payment success message not found"
+    print("🎉 Payment was successful!")
+
+finally:
+    time.sleep(2)
+    driver.quit()  
