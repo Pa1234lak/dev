@@ -17,7 +17,7 @@ def test_user_registration():
     try:
         # Step 1: Open registration page
         driver.get(f"{BASE_URL}/account/register")
-        print("✅ Opened registration page")
+        print("PASSED: Opened registration page.")
         
         # Step 2: Fill in the form
         try:
@@ -25,33 +25,34 @@ def test_user_registration():
             driver.find_element(By.ID, "id_email").send_keys("newuser123@example.com")
             driver.find_element(By.ID, "id_password1").send_keys("Password@123")
             driver.find_element(By.ID, "id_password2").send_keys("Password@123")
-            print("✅ Filled registration form")
+            print("PASSED: Filled registration form.")
         except TimeoutException:
-            print("❌ Registration form fields not found")
+            print("FAILED: Registration form fields not found.")
             return
         
         # Step 3: Click the 'Create account' button
         try:
             register_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Create account')]")))
             driver.execute_script("arguments[0].scrollIntoView(true);", register_button)
-            time.sleep(1)  # Let animations finish
+            time.sleep(1)
             register_button.click()
-            print("✅ Clicked 'Create account' button")
+            print("PASSED: Clicked 'Create account' button.")
         except TimeoutException:
-            print("❌ 'Create account' button not found or not clickable")
+            print("FAILED: 'Create account' button not found or not clickable.")
             return
         
         # Step 4: Verify success message / redirection
-        time.sleep(3)  # Wait for page update
+        time.sleep(3)
         page_text = driver.page_source.lower()
         if "email" in page_text:
-            print("✅ Registration successful; 'email' found on the page")
+            print("PASSED: Registration successful; 'email' found on the page.")
         else:
-            print("❌ Registration might have failed; 'email' not found on the page")
-
+            print("FAILED: Registration might have failed; 'email' not found on the page.")
+    
     finally:
         time.sleep(2)
         driver.quit()
+        print("INFO: Browser closed.")
 
 if __name__ == "__main__":
     test_user_registration()
