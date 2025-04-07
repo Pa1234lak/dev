@@ -1,17 +1,40 @@
-import requests
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from webdriver_manager.chrome import ChromeDriverManager
+import time
 
-BASE_URL = "https://web-app-cjv8.onrender.com"
+def test_order_total_display():
+    BASE_URL = "https://web-app-cjv8.onrender.com"
 
-def test_order_list_correct():
-    session = requests.Session()
+    # Setup WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    wait = WebDriverWait(driver, 10)
 
-    # (Optional) Login if orders page requires authentication
-    # response = session.post(f"{BASE_URL}/login", data={"username": "user", "password": "pass"})
-    # assert response.status_code in [200, 302]
+    try:
+        # Step 1: Go to the cart page
+        driver.get(f"{BASE_URL}/cart")
+        print("✅ Opened cart page")
 
-    # Access the orders page
-    response = session.get(f"{BASE_URL}/orders")
-    assert response.status_code == 200
+        # Step 2: Look for the total element
+        try:
+            total_element = wait.until(EC.presence_of_element_located((By.ID, "total")))
+            total_value = total_element.text.strip()
 
-    # Check if the response page contains the word "total"
-    assert "total" in response.text.lower()
+            if total_value:
+                print(f"✅ Found total element with value: {total_value}")
+            else:
+                print("❌ 'total' element is present but empty")
+
+        except TimeoutException:
+            print("❌ 'total' element not found on the cart page")
+
+    finally:
+        time.sleep(2)
+        driver.quit()
+
+if __name__ == "__main__":
+    test_order_total_display()

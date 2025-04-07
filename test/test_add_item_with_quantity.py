@@ -1,51 +1,64 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from webdriver_manager.chrome import ChromeDriverManager
 import time
 
-# Setup
-driver = webdriver.Chrome()
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 wait = WebDriverWait(driver, 10)
 
 try:
-    # 1. Open the product page
+    # Step 1: Open product page
     driver.get("https://web-app-cjv8.onrender.com/product/levis-shirt/")
+    print("✅ Opened product page.")
 
-    # 2. Wait for and set the quantity input
-    quantity_input = wait.until(
-        EC.presence_of_element_located((By.XPATH, "//input[@type='number']"))
+    # Step 2: Select quantity = 2
+    quantity_dropdown = wait.until(
+        EC.presence_of_element_located((By.ID, "select"))
     )
-    quantity_input.clear()
-    quantity_input.send_keys("2")
-    print("SUCCESS: Quantity set to 2.")
+    Select(quantity_dropdown).select_by_value("2")
+    print("✅ Selected quantity 2.")
 
-    # 3. Click on "Add to Cart" button
-    add_to_cart_btn = wait.until(
-        EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Add to Cart')]"))
-    )
-    add_to_cart_btn.click()
-    print("SUCCESS: Clicked 'Add to Cart'.")
+    # Step 3: Click Add to Cart
+    add_button = wait.until(EC.element_to_be_clickable((By.ID, "add-button")))
+    add_button.click()
+    print("✅ Clicked Add to Cart.")
 
-    # 4. Go to the cart page
-    time.sleep(1)  # slight delay in case redirect is slow
+    # Step 4: Wait for AJAX/cart update
+    time.sleep(2)
+
+    # Step 5: Visit the cart page
     driver.get("https://web-app-cjv8.onrender.com/cart/")
+    print("✅ Navigated to cart page.")
 
-    # 5. Verify Levi's Shirt with quantity 2 is in the cart
-    product_name = wait.until(
-        EC.presence_of_element_located((By.XPATH, "//td[contains(text(), \"Levi's Shirt\")]"))
-    )
-    quantity_cell = product_name.find_element(By.XPATH, "../td[2]")  # Assuming quantity is in next column
+    # Step 6: Validate cart quantity
+    try:
+        cart_qty_elem = wait.until(EC.presence_of_element_located((By.ID, "cart-qty")))
+        cart_qty = cart_qty_elem.text.strip()
+        if cart_qty == "2":
+            print("✅ Cart quantity is correct (2).")
+        else:
+            print(f"❌ Cart quantity mismatch: Found {cart_qty}, expected 2.")
+    except TimeoutException:
+        print("❌ Could not find 'cart-qty' element.")
 
-    if quantity_cell.text.strip() == "2":
-        print("SUCCESS: Correct quantity (2) for Levi's Shirt found in cart.")
-    else:
-        print(f"FAILED: Quantity mismatch. Found: {quantity_cell.text.strip()}")
+    # Step 7: Validate total price is visible and greater than zero
+    try:
+        total_elem = wait.until(EC.presence_of_element_located((By.ID, "total")))
+        total = total_elem.text.strip()
+        if total and float(total.replace("$", "").replace("₹", "")) > 0:
+            print(f"🎉 SUCCESS: Total is visible and valid — {total}")
+        else:
+            print(f"❌ Total value invalid or zero — found: {total}")
+    except TimeoutException:
+        print("❌ Could not find 'total' element.")
 
 except TimeoutException as e:
-    print(f"FAILED: Timeout waiting for element - {str(e)}")
+    print(f"❌ TimeoutException: {e}")
 
 finally:
-    time.sleep(3)
+    time.sleep(2)
     driver.quit()

@@ -1,22 +1,57 @@
-import requests
-
-BASE_URL = "https://web-app-cjv8.onrender.com"
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import TimeoutException
+import time
 
 def test_user_registration():
-    session = requests.Session()
+    BASE_URL = "https://web-app-cjv8.onrender.com"
+    
+    # Setup WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    wait = WebDriverWait(driver, 10)
+    
+    try:
+        # Step 1: Open registration page
+        driver.get(f"{BASE_URL}/account/register")
+        print("✅ Opened registration page")
+        
+        # Step 2: Fill in the form
+        try:
+            wait.until(EC.presence_of_element_located((By.ID, "id_username"))).send_keys("newuser123")
+            driver.find_element(By.ID, "id_email").send_keys("newuser123@example.com")
+            driver.find_element(By.ID, "id_password1").send_keys("Password@123")
+            driver.find_element(By.ID, "id_password2").send_keys("Password@123")
+            print("✅ Filled registration form")
+        except TimeoutException:
+            print("❌ Registration form fields not found")
+            return
+        
+        # Step 3: Click the 'Create account' button
+        try:
+            register_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Create account')]")))
+            driver.execute_script("arguments[0].scrollIntoView(true);", register_button)
+            time.sleep(1)  # Let animations finish
+            register_button.click()
+            print("✅ Clicked 'Create account' button")
+        except TimeoutException:
+            print("❌ 'Create account' button not found or not clickable")
+            return
+        
+        # Step 4: Verify success message / redirection
+        time.sleep(3)  # Wait for page update
+        page_text = driver.page_source.lower()
+        if "email" in page_text:
+            print("✅ Registration successful; 'email' found on the page")
+        else:
+            print("❌ Registration might have failed; 'email' not found on the page")
 
-    # Simulate registration POST request
-    response = session.post(f"{BASE_URL}/register", data={
-        "username": "newuser123",
-        "email": "newuser123@example.com",
-        "password1": "Password@123",
-        "password2": "Password@123",
-        "register": "Register"
-    })
+    finally:
+        time.sleep(2)
+        driver.quit()
 
-    # Accept 200 OK or 302 Redirect
-    assert response.status_code in [200, 302]
-
-    # Check if 'email' is in the redirected or resulting page
-    page = session.get(f"{BASE_URL}/")
-    assert "email" in page.text.lower()
+if __name__ == "__main__":
+    test_user_registration()

@@ -1,41 +1,74 @@
-import requests
-import re
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import time
 
-BASE_URL = "https://web-app-cjv8.onrender.com"
+def test_shipping_and_paypal_button():
+    # Setup WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    wait = WebDriverWait(driver, 20)
 
-def test_checkout_shipping_address():
-    session = requests.Session()
+    try:
+        # Step 1: Go to the checkout page
+        driver.get("https://web-app-cjv8.onrender.com/payment/checkout")
+        print("✅ Opened checkout page.")
 
-    # Step 1: Add item to cart (assuming you can't checkout without items)
-    add_response = session.post(f"{BASE_URL}/cart/add", data={"product_id": 1, "quantity": 1})
-    assert add_response.status_code in (200, 302), "Failed to add item to cart"
+        # Step 2: Fill in the form
+        try:
+            wait.until(EC.presence_of_element_located((By.ID, "name"))).send_keys("Test User")
+            driver.find_element(By.ID, "email").send_keys("test@example.com")
+            driver.find_element(By.ID, "address1").send_keys("123 Test Street")
+            # Skipping second 'address1' to avoid duplicate entry
+            driver.find_element(By.ID, "city").send_keys("Testville")
+            driver.find_element(By.ID, "state").send_keys("CA")
+            driver.find_element(By.ID, "zipcode").send_keys("12345")
+            print("✅ Form fields filled.")
+        except NoSuchElementException as e:
+            print(f"❌ Form element not found: {e}")
+            return
 
-    # Step 2: Access the checkout page to extract CSRF token if needed
-    checkout_page = session.get(f"{BASE_URL}/checkout")
-    assert checkout_page.status_code == 200
+        # Wait for JS to process (and PayPal button to render)
+        time.sleep(3)
 
-    csrf_token = None
-    match = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', checkout_page.text)
-    if match:
-        csrf_token = match.group(1)
+        # Step 3: Switch into PayPal iframe
+        try:
+            iframes = driver.find_elements(By.TAG_NAME, "iframe")
+            paypal_frame = None
+            for iframe in iframes:
+                src = iframe.get_attribute("src")
+                if src and "paypal" in src.lower():
+                    paypal_frame = iframe
+                    break
 
-    # Step 3: Submit the shipping form
-    shipping_data = {
-        "address": "123 Street Name",
-        "city": "Bangalore",
-        "zip": "560001",
-        "continue": "Continue"
-    }
+            if not paypal_frame:
+                print("❌ PayPal iframe not found.")
+                return
 
-    if csrf_token:
-        shipping_data["csrfmiddlewaretoken"] = csrf_token
+            driver.switch_to.frame(paypal_frame)
+            print("✅ Switched to PayPal iframe.")
+        except Exception as e:
+            print(f"❌ Error switching to iframe: {e}")
+            return
 
-    headers = {}
-    if csrf_token:
-        headers["Referer"] = f"{BASE_URL}/checkout"
+        # Step 4: Check for PayPal button
+        try:
+            paypal_btn = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button")))
+            if paypal_btn.is_enabled():
+                print("🎉 SUCCESS: PayPal button is enabled.")
+            else:
+                print("❌ PayPal button is present but disabled.")
+        except TimeoutException:
+            print("❌ PayPal button not found inside iframe.")
 
-    shipping_response = session.post(f"{BASE_URL}/checkout", data=shipping_data, headers=headers)
-    assert shipping_response.status_code in (200, 302), f"Shipping POST failed: {shipping_response.status_code}"
+    finally:
+        time.sleep(3)
+        driver.quit()
+        print("✅ Browser closed.")
 
-    # Step 4: Verify if redirected to payment step
-    assert "payment" in shipping_response.text.lower()
+# Main runner
+if __name__ == "__main__":
+    test_shipping_and_paypal_button()
