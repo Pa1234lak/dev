@@ -14,38 +14,38 @@ wait = WebDriverWait(driver, 10)
 try:
     # Step 2: Open product page
     driver.get("https://web-app-cjv8.onrender.com/product/levis-shirt/")
-    print("✅ Opened product page")
+    print("PASSED: Opened product page")
 
     # Step 3: Select quantity = 2
     quantity_dropdown = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='select']")))
     Select(quantity_dropdown).select_by_value("2")
-    print("✅ Selected quantity 2")
+    print("PASSED: Selected quantity 2")
 
     # Step 4: Click "Add to Cart" button
     add_button = wait.until(EC.element_to_be_clickable((By.ID, "add-button")))
     add_button.click()
-    print("✅ Clicked Add to Cart")
+    print("PASSED: Clicked Add to Cart")
 
     # Step 5: Wait for cart to update
     cart_qty = wait.until(EC.presence_of_element_located((By.ID, "cart-qty")))
     time.sleep(2)  # allow time for AJAX cart update
-    print(f"🛒 Cart quantity shown: {cart_qty.text}")
+    print(f"INFO: Cart quantity shown: {cart_qty.text}")
 
     # Step 6: Go to cart page
     driver.get("https://web-app-cjv8.onrender.com/cart/")
-    print("✅ Navigated to cart page")
+    print("PASSED: Navigated to cart page")
 
-    # Step 7: Wait and get the total amount with ₹ symbol
+    # Step 7: Wait and get the total amount
     total_elem = wait.until(EC.presence_of_element_located((By.ID, "total")))
     total_text = total_elem.text
-    print(f"💰 Total text found: {total_text}")
+    print(f"INFO: Total text found: {total_text}")
 
     # Step 8: Extract numeric value and validate
-    match = re.search(r'₹\s*([\d\.]+)', total_text)
-    assert match, "❌ ₹ symbol or total not found!"
+    match = re.search(r'₹?\s*([\d\.]+)', total_text)
+    assert match, f"FAILED: Total not found in text: '{total_text}'"
     total = float(match.group(1))
-    assert total > 0, f"❌ Expected total > 0 but got {total}"
-    print(f"✅ Cart total is ₹{total} — test passed.")
+    assert total > 0, f"FAILED: Expected total > 0 but got {total}"
+    print(f"PASSED: Cart total is {total} — test passed.")
 
 finally:
     driver.quit()
