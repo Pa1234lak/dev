@@ -15,7 +15,7 @@ def test_shipping_and_paypal_button():
     try:
         # Step 1: Go to the checkout page
         driver.get("https://web-app-cjv8.onrender.com/payment/checkout")
-        print("✅ Opened checkout page.")
+        print("PASSED: Opened checkout page.")
 
         # Step 2: Fill in the form
         try:
@@ -26,9 +26,9 @@ def test_shipping_and_paypal_button():
             driver.find_element(By.ID, "city").send_keys("Testville")
             driver.find_element(By.ID, "state").send_keys("CA")
             driver.find_element(By.ID, "zipcode").send_keys("12345")
-            print("✅ Form fields filled.")
+            print("PASSED: Form fields filled.")
         except NoSuchElementException as e:
-            print(f"❌ Form element not found: {e}")
+            print(f"FAILED: Form element not found: {e}")
             return
 
         # Wait for JS to process (and PayPal button to render)
@@ -45,29 +45,29 @@ def test_shipping_and_paypal_button():
                     break
 
             if not paypal_frame:
-                print("❌ PayPal iframe not found.")
+                print("FAILED: PayPal iframe not found.")
                 return
 
             driver.switch_to.frame(paypal_frame)
-            print("✅ Switched to PayPal iframe.")
+            print("PASSED: Switched to PayPal iframe.")
         except Exception as e:
-            print(f"❌ Error switching to iframe: {e}")
+            print(f"FAILED: Error switching to iframe: {e}")
             return
 
         # Step 4: Check for PayPal button
         try:
             paypal_btn = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "button")))
             if paypal_btn.is_enabled():
-                print("🎉 SUCCESS: PayPal button is enabled.")
+                print("SUCCESS: PayPal button is enabled.")
             else:
-                print("❌ PayPal button is present but disabled.")
+                print("FAILED: PayPal button is present but disabled.")
         except TimeoutException:
-            print("❌ PayPal button not found inside iframe.")
+            print("FAILED: PayPal button not found inside iframe.")
 
     finally:
         time.sleep(3)
         driver.quit()
-        print("✅ Browser closed.")
+        print("INFO: Browser closed.")
 
 # Main runner
 if __name__ == "__main__":
