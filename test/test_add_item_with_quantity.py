@@ -4,7 +4,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import re
 import time
 
 # Step 1: Setup Chrome driver
@@ -29,23 +28,12 @@ try:
     # Step 5: Wait for cart to update
     cart_qty = wait.until(EC.presence_of_element_located((By.ID, "cart-qty")))
     time.sleep(2)  # allow time for AJAX cart update
-    print(f"INFO: Cart quantity shown: {cart_qty.text}")
+    cart_count = int(cart_qty.text)
+    print(f"INFO: Cart quantity shown: {cart_count}")
 
-    # Step 6: Go to cart page
-    driver.get("https://web-app-cjv8.onrender.com/cart/")
-    print("PASSED: Navigated to cart page")
-
-    # Step 7: Wait and get the total amount
-    total_elem = wait.until(EC.presence_of_element_located((By.ID, "total")))
-    total_text = total_elem.text
-    print(f"INFO: Total text found: {total_text}")
-
-    # Step 8: Extract numeric value and validate
-    match = re.search(r'₹?\s*([\d\.]+)', total_text)
-    assert match, f"FAILED: Total not found in text: '{total_text}'"
-    total = float(match.group(1))
-    assert total > 0, f"FAILED: Expected total > 0 but got {total}"
-    print(f"PASSED: Cart total is {total} — test passed.")
+    # Step 6: Assert quantity is correct
+    assert cart_count == 2, f"FAILED: Expected cart quantity 2 but got {cart_count}"
+    print("PASSED: Cart quantity is correct.")
 
 finally:
     driver.quit()
